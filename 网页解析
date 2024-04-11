@@ -1,0 +1,32 @@
+import requests
+from bs4 import BeautifulSoup
+
+def get_data(url, params):
+    response = requests.get(url, params=params)
+    if response.status_code!= 200:
+        raise requests.HTTPError(f"请求失败，状态码: {response.status_code}")
+    soup = BeautifulSoup(response.text, "html.parser")
+    table_data = soup.find_all("table", class_="table table-striped table-hover table-bordered")
+
+    if not table_data:
+        raise ValueError("未找到表格数据")
+
+    return table_data[0].find_all("tr")
+
+def save_data_to_csv(data, csv_file_path):
+    with open(csv_file_path, "w", encoding="utf-8") as csv_file:
+        fieldnames = ["ISIN", "Bond Code", "Issuer", "Bond Type", "Issue Date", "Latest Rating"]
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+
+        writer.writeheader()
+        for row in data:
+            writer.writerow(row)
+
+if __name__ == "__main__":
+    params = {
+        "Bond Type": "Treasury Bond",
+        "Issue Year": "2023",
+    }
+    data = get_data("http://www.chinabond.com.cn/bond transactions/information search", params)
+    save_data_to_csv(data, "data.csv")
+    
